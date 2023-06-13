@@ -1,0 +1,71 @@
+Sub TestMatchmaking6()
+    Dim i As Integer
+    Dim n As Integer
+    Dim TeamsArray() As Variant
+    
+    n = LstTeams.ListCount - 1
+    ReDim TeamsArray(0 To n)
+    
+    For i = 0 To n
+        TeamsArray(i) = LstTeams.ItemData(i)
+    Next i    
+    Matchmaking n + 1, TeamsArray
+
+End Sub
+
+
+
+
+Public Sub Matchmaking(ByVal n As Integer, ByRef Teams() As Variant)
+    Dim currentTeams() As Variant
+    currentTeams = Teams
+    
+    Dim NetNumberBase As Integer
+    Dim TheRound As Integer
+    Dim TheHour As Date
+    Dim DatePick As Integer
+    
+    NetNumberBase = LstNet
+    For TheRound = 1 To 16 'reordering array Number of Games for each team.
+        Debug.Print "Round " & TheRound & ":"
+        DatePick = round((TheRound + 0.5) / 2, 0) - 1
+        'TheHour = LstDate.ItemData(DatePick) & " " & LstHours
+        TheHourSelection = LstHours.ListIndex - DatePick Mod 2 + ((TheRound + 1) Mod 2) * 2
+        If LstHours.ListIndex = 1 Then TheHour = LstHours.ItemData(LstHours.ListIndex - DatePick Mod 2 + ((TheRound + 1) Mod 2) * 2)
+        If LstHours.ListIndex = 0 Then TheHour = LstHours.ItemData(LstHours.ListIndex + DatePick Mod 2 + ((TheRound + 1) Mod 2) * 2)
+        Debug.Print ((TheRound + 1) Mod 2) * 2 & " Hour: " & LstHours.ItemData(LstHours.ListIndex + ((TheRound + 1) Mod 2) * 2)
+        Debug.Print TheHourSelection & " LstHours.ListIndex " & LstHours.ListIndex & " DataPick Mod 2: " & DatePick Mod 2&; " Selected Hour: " & LstHours.ListIndex & " Actual Hour: " & LstHours.ItemData(LstHours.ListIndex - DatePick Mod 2 + ((TheRound + 1) Mod 2) * 2)
+        
+        
+        If TheRound <> 1 Then
+            Dim oldTeams() As Variant
+            oldTeams = currentTeams
+            currentTeams(1) = oldTeams(n / 2)
+
+            Dim i As Integer
+            For i = 2 To n / 2 - 1 'first 2 iterations
+                currentTeams(i) = oldTeams(i - 1)
+            Next i
+
+            For i = n / 2 To n - 2
+                currentTeams(i) = oldTeams(i + 1)
+            Next i
+
+            currentTeams(n - 1) = oldTeams(n / 2 - 1)
+        End If
+
+        For i = 0 To n / 2 - 1 'prints out current matchmaking
+            Dim TeamA As String
+            Dim TeamB As String
+            TeamA = currentTeams(i)
+            TeamB = currentTeams(i + n / 2)
+            
+            Debug.Print TeamA & " vs " & TeamB & " Date " & round((TheRound + 0.5) / 2, 0) & " Date: " & LstDate.ItemData(DatePick) & " The Hour " & TheHour
+            DoCmd.RunSQL "Insert Into RyeGames (Team1, Team2, GameDate, NetNumber) Values(" & TeamA & ", " & TeamB & ", #" & LstDate.ItemData(DatePick) & " " & TheHour & "#, " & NetNumberBase + i & ")"
+            'LstDevTeam.ItemData (i)
+        Next i
+    Next TheRound
+    List0.Requery
+    List1.Requery
+    LstDevTeamF.Requery
+    LstTeamsF.Requery
